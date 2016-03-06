@@ -220,13 +220,11 @@
 *     
  15      IF (N-M+1 .EQ. 1) THEN
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
-            
-            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             GO TO 700
             
@@ -249,34 +247,28 @@
                CALL DROT(N0,WORK(1,N-1),1,WORK(1,N),1,C2,S2)
             ENDIF
             
-            CALL DLARTG2(A(N-1),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N-1),SIGMA,C1,S1,A(N-1))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N-1),1,WORK(1,N-1),1,C1,S1)
             ENDIF
             
-            CALL DLARTG7(SIGMA,DESIG,A(N-1),A(N-1),DESIG0)
-            
-            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
-            
-            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             GO TO 700
          ENDIF
          
          IF (B(N-1) .LE. SIGMA2) THEN
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
-            
-            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             N = N - 1
             GO TO 15
@@ -300,21 +292,17 @@
                CALL DROT(N0,WORK(1,N-1),1,WORK(1,N),1,C2,S2)
             ENDIF
             
-            CALL DLARTG2(A(N-1),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N-1),SIGMA,C1,S1,A(N-1))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N-1),1,WORK(1,N-1),1,C1,S1)
             ENDIF
             
-            CALL DLARTG7(SIGMA,DESIG,A(N-1),A(N-1),DESIG0)
-            
-            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
+            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
-            
-            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             N = N - 2
             GO TO 15
@@ -336,10 +324,10 @@
 
             CALL DLAS2(A(N-1), B(N-1), A(N), TMP2, TMP3)
             
-            TAU2 = MIN(TMP2,A(N))
-            IF (TAU2 .EQ. ZERO) GO TO 350
+            TAU = MIN(TMP2,A(N))
+            IF (TAU .EQ. ZERO) GO TO 350
             
-            CALL DLARTG7(SIGMA,DESIG,TAU2,T,DESIG0)
+            CALL DLARTG7(SIGMA,DESIG,TAU,T,DESIG0)
             
             IF (TMP3 .GT. SQRT(TWO)*TMP2) THEN
                SIT = 1
@@ -349,14 +337,13 @@
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 350
 *     
             TAU1 = MINVAL(A(M:N-1))
-            IF (TAU2 .GE. TAU1) THEN
+            IF (TAU .GE. TAU1) THEN
                IF (TAU1 .EQ. ZERO) GO TO 350
                CALL DLARTG7(SIGMA,DESIG,TAU1,T,DESIG0)
                IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 350
                GO TO 160
             ENDIF
 *     
-            TAU = TAU2
             TMP4 = A(M)-TAU
             IF (TMP4 .LE. ZERO) THEN
                GO TO 160
@@ -581,9 +568,7 @@
                CALL DROT(N0,SU(1,M),1,WORK(1,M),1,
      $              WORK2(INDRV1+2*M-1),WORK2(INDRV2+2*M-1))
             ENDIF
-            
             DO J = M, N-1
-               
                IF( ( WORK2(INDRV1+2*J).NE.ONE ) .OR. 
      $              ( WORK2(INDRV2+2*J).NE.ZERO ) ) THEN
                   CALL DROT(N0,SU(1,J),1,SU(1,J+1),1,WORK2(INDRV1+2*J),
@@ -595,6 +580,9 @@
                   CALL DROT(N0,SU(1,J+1),1,WORK(1,J+1),1,
      $                 WORK2(INDRV1+2*J+1),WORK2(INDRV2+2*J+1))
                ENDIF
+            ENDDO
+
+            DO J = M, N-1
                IF( ( WORK2(INDRV3+J).NE.ONE ) .OR. 
      $              ( WORK2(INDRV4+J).NE.ZERO ) ) THEN
                   CALL DROT(N0,WORK(1,J),1,WORK(1,J+1),1,
@@ -697,10 +685,10 @@
             CALL DLAS2(WORK2(INDRV5+M), WORK2(INDRV6+M), 
      $           WORK2(INDRV5+M+1), TMP2, TMP3)
             
-            TAU2 = MIN(TMP2,WORK2(INDRV5+M))
-            IF (TAU2 .EQ. ZERO) GO TO 1350
+            TAU = MIN(TMP2,WORK2(INDRV5+M))
+            IF (TAU .EQ. ZERO) GO TO 1350
             
-            CALL DLARTG7(SIGMA,DESIG,TAU2,T,DESIG0)
+            CALL DLARTG7(SIGMA,DESIG,TAU,T,DESIG0)
             
             IF (TMP3 .GT. SQRT(TWO)*TMP2) THEN
                SIT = 1
@@ -710,14 +698,13 @@
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 1350
 *     
             TAU1 = MINVAL(WORK2(INDRV5+M+1:INDRV5+N))
-            IF (TAU2 .GE. TAU1) THEN
+            IF (TAU .GE. TAU1) THEN
                IF (TAU1 .EQ. ZERO) GO TO 1350
                CALL DLARTG7(SIGMA,DESIG,TAU1,T,DESIG0)
                IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 1350
                GO TO 1160
             ENDIF
 *     
-            TAU = TAU2
             TMP4 = WORK2(INDRV5+N)-TAU
             IF (TMP4 .LE. ZERO) THEN
                GO TO 1160
@@ -943,12 +930,14 @@
             ENDDO
 *     
             DO J = N-1, M, -1
-               
                IF( ( WORK2(INDRV3+J+1).NE.ONE ) .OR. 
      $              ( WORK2(INDRV4+J+1).NE.ZERO ) ) THEN
                   CALL DROT(N0,WORK(1,J+1),1,WORK(1,J),1,
      $                 WORK2(INDRV3+J+1),WORK2(INDRV4+J+1))
                ENDIF
+            ENDDO
+
+            DO J = N-1, M, -1
                IF( ( WORK2(INDRV1+2*J+2).NE.ONE ) .OR. 
      $              ( WORK2(INDRV2+2*J+2).NE.ZERO ) ) 
      $              THEN
@@ -962,7 +951,6 @@
                ENDIF
                
             ENDDO
-*     
             IF( ( WORK2(INDRV1+2*M).NE.ONE ) .OR. 
      $           ( WORK2(INDRV2+2*M).NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,M),1,WORK(1,M),1,
