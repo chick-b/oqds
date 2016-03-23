@@ -9,7 +9,7 @@
       INTEGER N, M, I, J, K, OLDM, OLDN, IDIR, M0
       INTEGER INDRV1, INDRV2, INDRV3, INDRV4, INDRV5, INDRV6
       DOUBLE PRECISION TMP1, TMP2, TMP3, TMP4
-      DOUBLE PRECISION TAU, TAU1, TAU2, TAU3
+      DOUBLE PRECISION TAU, TAU2
       DOUBLE PRECISION SIGMA, SIGMA2, DESIG, T, DESIG0
       DOUBLE PRECISION C1, S1, C2, S2, SMIN, EPS, TOL
       
@@ -71,11 +71,11 @@
                TMP1 = C1*A(J+1)
             ENDDO
             A(N0) = TMP1
-*
+*     
          ELSE
-            
+
             IDIR = 2
-            
+
             TMP1 = A(N0)
             DO J = N0-1,1,-1
                CALL DLARTG2(TMP1,B(J),C1,S1,A(J+1))
@@ -85,7 +85,7 @@
                TMP1 = C1*A(J)
             ENDDO
             A(1) = TMP1
-            
+
             DO J = N0-1, 1, -1
                IF( ( WORK2(INDRV1+J+1).NE.ONE ) .OR.
      $              ( WORK2(INDRV2+J+1).NE.ZERO ) ) THEN
@@ -208,11 +208,13 @@
 *     
  15      IF (N-M+1 .EQ. 1) THEN
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
+            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
+            
+            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             GO TO 700
             
@@ -231,28 +233,34 @@
                CALL DROT(N0,WORK(1,N-1),1,WORK(1,N),1,C2,S2)
             ENDIF
             
-            CALL DLARTG2(A(N-1),SIGMA,C1,S1,A(N-1))
+            CALL DLARTG2(A(N-1),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N-1),1,WORK(1,N-1),1,C1,S1)
             ENDIF
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
+            CALL DLARTG7(SIGMA,DESIG,A(N-1),A(N-1),DESIG0)
+            
+            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
+            
+            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             GO TO 700
          ENDIF
          
          IF (B(N-1) .LE. SIGMA2) THEN
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
+            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
+            
+            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             N = N - 1
             GO TO 15
@@ -272,17 +280,21 @@
                CALL DROT(N0,WORK(1,N-1),1,WORK(1,N),1,C2,S2)
             ENDIF
             
-            CALL DLARTG2(A(N-1),SIGMA,C1,S1,A(N-1))
+            CALL DLARTG2(A(N-1),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N-1),1,WORK(1,N-1),1,C1,S1)
             ENDIF
             
-            CALL DLARTG2(A(N),SIGMA,C1,S1,A(N))
+            CALL DLARTG7(SIGMA,DESIG,A(N-1),A(N-1),DESIG0)
+            
+            CALL DLARTG2(A(N),SIGMA,C1,S1,TMP1)
             
             IF( ( C1.NE.ONE ) .OR. ( S1.NE.ZERO ) ) THEN
                CALL DROT(N0,SU(1,N),1,WORK(1,N),1,C1,S1)
             ENDIF
+            
+            CALL DLARTG7(SIGMA,DESIG,A(N),A(N),DESIG0)
             
             N = N - 2
             GO TO 15
@@ -316,10 +328,10 @@
             ENDIF
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 350
 *     
-            TAU1 = MINVAL(A(M:N-1))
-            IF (TAU .GE. TAU1) THEN
-               IF (TAU1 .EQ. ZERO) GO TO 350
-               CALL DLARTG7(SIGMA,DESIG,TAU1,T,DESIG0)
+            TAU2 = MINVAL(A(M:N-1))
+            IF (TAU .GE. TAU2) THEN
+               IF (TAU2 .EQ. ZERO) GO TO 350
+               CALL DLARTG7(SIGMA,DESIG,TAU2,T,DESIG0)
                IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 350
                GO TO 160
             ENDIF
@@ -343,10 +355,10 @@
             TMP4 = DFMA0(C1,A(N),-TAU)
             IF (TMP4 .LT. ZERO) THEN
                DO K=0,MAXREC
-                  TAU3 = MAX(ONE-DBLE(K)*EPS,ZERO)*(C1*A(N))
-                  IF (TAU3 .LT. TAU) EXIT
+                  TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*(C1*A(N))
+                  IF (TAU2 .LT. TAU) EXIT
                ENDDO
-               TAU = TAU3
+               TAU = TAU2
             ENDIF
             IF (TAU .GT. ZERO) GO TO 125
 *     
@@ -560,9 +572,6 @@
                   CALL DROT(N0,SU(1,J+1),1,WORK(1,J+1),1,
      $                 WORK2(INDRV1+2*J+1),WORK2(INDRV2+2*J+1))
                ENDIF
-            ENDDO
-
-            DO J = M, N-1
                IF( ( WORK2(INDRV3+J).NE.ONE ) .OR. 
      $              ( WORK2(INDRV4+J).NE.ZERO ) ) THEN
                   CALL DROT(N0,WORK(1,J),1,WORK(1,J+1),1,
@@ -626,7 +635,7 @@
             ELSE
                TMP1 = A(N-1)*(TMP1/(TMP1+B(N-2)))
             ENDIF
-
+ 
             IF (B(N-1) .LE. SIGMA2 .OR. TMP1 .EQ. B(N-1)+TMP1) THEN
                B(N-1) = ZERO
             ENDIF
@@ -661,10 +670,10 @@
             ENDIF
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 1350
 *     
-            TAU1 = MINVAL(WORK2(INDRV5+M+1:INDRV5+N))
-            IF (TAU .GE. TAU1) THEN
-               IF (TAU1 .EQ. ZERO) GO TO 1350
-               CALL DLARTG7(SIGMA,DESIG,TAU1,T,DESIG0)
+            TAU2 = MINVAL(WORK2(INDRV5+M+1:INDRV5+N))
+            IF (TAU .GE. TAU2) THEN
+               IF (TAU2 .EQ. ZERO) GO TO 1350
+               CALL DLARTG7(SIGMA,DESIG,TAU2,T,DESIG0)
                IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 1350
                GO TO 1160
             ENDIF
@@ -688,10 +697,10 @@
             TMP4 = DFMA0(C1,WORK2(INDRV5+M),-TAU)
             IF (TMP4 .LT. ZERO) THEN
                DO K=0,MAXREC
-                  TAU3 = MAX(ONE-DBLE(K)*EPS,ZERO)*(C1*WORK2(INDRV5+M))
-                  IF (TAU3 .LT. TAU) EXIT
+                  TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*(C1*WORK2(INDRV5+M))
+                  IF (TAU2 .LT. TAU) EXIT
                ENDDO
-               TAU = TAU3
+               TAU = TAU2
             ENDIF
             IF (TAU .GT. ZERO) GO TO 1125
 *     
@@ -891,9 +900,6 @@
                   CALL DROT(N0,WORK(1,J+1),1,WORK(1,J),1,
      $                 WORK2(INDRV3+J+1),WORK2(INDRV4+J+1))
                ENDIF
-            ENDDO
-
-            DO J = N-1, M, -1
                IF( ( WORK2(INDRV1+2*J+2).NE.ONE ) .OR. 
      $              ( WORK2(INDRV2+2*J+2).NE.ZERO ) ) 
      $              THEN
