@@ -334,20 +334,21 @@
             OLDM = M
             OLDN = N
 
-            CALL DLAS2(A(N-1), B(N-1), A(N), TMP2, TMP3)
-            
-            TAU = MIN(TMP2,A(N))
+            CALL DLAS2(A(N-1), B(N-1), A(N), TMP1, TMP3)
+            TAU = MIN(A(N),TMP1)
             IF (TAU .EQ. ZERO) GO TO 350
-            
             CALL DLARTG7(SIGMA,DESIG,TAU,T,DESIG0)
-            
-            IF (TMP3 .GT. SQRT(TWO)*TMP2) THEN
+
+            TMP2 = MIN(A(N),A(N-1))
+            TMP3 = MAX(A(N),A(N-1))
+            IF (TMP3 .GE. TWO*TMP2) THEN
                SIT = 1
             ELSE
                SIT = 0
             ENDIF
+
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 350
-*     
+
             TAU2 = MINVAL(A(M:N-1))
             IF (TAU .GE. TAU2) THEN
                IF (TAU2 .EQ. ZERO) GO TO 350
@@ -385,17 +386,24 @@
  160        WORK2(INDRV5+N) = ONE/A(N)
             TMP3 = WORK2(INDRV5+N)
             DO J = N-1,M,-1
-               WORK2(INDRV5+J) = (ONE+
-     $              B(J)*WORK2(INDRV5+J+1))/A(J)
+               WORK2(INDRV1+J) = B(J)/A(J)
+               WORK2(INDRV5+J) = ONE/A(J)+
+     $              WORK2(INDRV1+J)*WORK2(INDRV5+J+1)
                TMP3 = MAX(TMP3,WORK2(INDRV5+J))
             ENDDO
             WORK2(INDRV5+M) = (WORK2(INDRV5+M)/TMP3)/A(M)
             TMP1 = WORK2(INDRV5+M)
-            DO J = M+1,N
-               WORK2(INDRV5+J) = (WORK2(INDRV5+J)/TMP3+
-     $              B(J-1)*WORK2(INDRV5+J-1))/A(J)
+            DO J = M+1,N-1
+               WORK2(INDRV2+J) = B(J-1)/A(J)
+               WORK2(INDRV5+J) = (WORK2(INDRV5+J)/TMP3)/A(J)+
+     $              WORK2(INDRV2+J)*WORK2(INDRV5+J-1)
                TMP1 = MAX(TMP1,WORK2(INDRV5+J))
             ENDDO
+            TAU2 = MAX(ZERO,(ONE/SQRT(TMP1))/SQRT(TMP3))
+            WORK2(INDRV2+N) = B(N-1)/A(N)
+            WORK2(INDRV5+N) = (WORK2(INDRV5+N)/TMP3)/A(N)+
+     $           WORK2(INDRV2+N)*WORK2(INDRV5+N-1)
+            TMP1 = MAX(TMP1,WORK2(INDRV5+N))
             TAU = MAX(ZERO,(ONE/SQRT(TMP1))/SQRT(TMP3))
             
             WORK2(INDRV5+N) = WORK2(INDRV5+N)/TMP1
@@ -403,19 +411,25 @@
             TMP3 = WORK2(INDRV6+N)
             DO J = N-1,M,-1
                WORK2(INDRV5+J) = WORK2(INDRV5+J)/TMP1
-               WORK2(INDRV6+J) = (WORK2(INDRV5+J)+
-     $              B(J)*WORK2(INDRV6+J+1))/A(J)
+               WORK2(INDRV6+J) = WORK2(INDRV5+J)/A(J)+
+     $              WORK2(INDRV1+J)*WORK2(INDRV6+J+1)
                TMP3 = MAX(TMP3,WORK2(INDRV6+J))
             ENDDO
             TMP2 = (WORK2(INDRV6+M)/TMP3)/A(M)
             TMP1 = WORK2(INDRV5+M)/TMP2
-            DO J = M+1,N
-               TMP2 = (WORK2(INDRV6+J)/TMP3+
-     $              B(J-1)*TMP2)/A(J)
+            DO J = M+1,N-1
+               TMP2 = (WORK2(INDRV6+J)/TMP3)/A(J)+WORK2(INDRV2+J)*TMP2
                TMP1 = MIN(TMP1,WORK2(INDRV5+J)/TMP2)
             ENDDO
+            TAU2 = MAX(TAU2,SQRT(TMP1)/SQRT(TMP3))
+            TMP2 = (WORK2(INDRV6+N)/TMP3)/A(N)+WORK2(INDRV2+N)*TMP2
+            TMP1 = MIN(TMP1,WORK2(INDRV5+N)/TMP2)
             TAU = MAX(TAU,SQRT(TMP1)/SQRT(TMP3))
-            
+
+            TMP1=SQRT(TAU2-A(N))*SQRT(TAU2+A(N))
+            TAU = MAX(TAU,
+     $           A(N)*SQRT(ONE-B(N-1)/TMP1)*SQRT(ONE+B(N-1)/TMP1))
+
             IF (TAU .GT. ZERO) GO TO 125
        
             TAU=A(N)-HALF*B(N-1)
@@ -441,7 +455,7 @@
                      TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*A(M)
                      IF (TAU2 .LT. TAU) EXIT
                   ENDDO
-                  TAU = MAX(HALF*TAU,TAU2)
+                  TAU = TAU2
                   GO TO 125
                ELSE
                   TMP3 = SQRT(TMP4)*SQRT(A(M)+TAU)
@@ -502,7 +516,7 @@
                      TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*A(M)
                      IF (TAU2 .LT. TAU) EXIT
                   ENDDO
-                  TAU = MAX(HALF*TAU,TAU2)
+                  TAU = TAU2
                   GO TO 125
                ELSE
                   TMP3 = SQRT(TMP4)*SQRT(A(M)+TAU)
@@ -692,20 +706,21 @@
             WORK2(INDRV5+M) = TMP1
 *     
             CALL DLAS2(WORK2(INDRV5+M), WORK2(INDRV6+M), 
-     $           WORK2(INDRV5+M+1), TMP2, TMP3)
-            
-            TAU = MIN(TMP2,WORK2(INDRV5+M))
+     $           WORK2(INDRV5+M+1), TMP1, TMP3)
+            TAU = MIN(WORK2(INDRV5+M),TMP1)
             IF (TAU .EQ. ZERO) GO TO 1350
-            
             CALL DLARTG7(SIGMA,DESIG,TAU,T,DESIG0)
-            
-            IF (TMP3 .GT. SQRT(TWO)*TMP2) THEN
+
+            TMP2 = MIN(WORK2(INDRV5+M),WORK2(INDRV5+M+1))
+            TMP3 = MAX(WORK2(INDRV5+M),WORK2(INDRV5+M+1))
+            IF (TMP3 .GE. TWO*TMP2) THEN
                SIT = 1
             ELSE
                SIT = 0
             ENDIF
+
             IF (T .LE. SIGMA .AND. SIT .EQ. 1) GO TO 1350
-*     
+
             TAU2 = MINVAL(WORK2(INDRV5+M+1:INDRV5+N))
             IF (TAU .GE. TAU2) THEN
                IF (TAU2 .EQ. ZERO) GO TO 1350
@@ -743,17 +758,21 @@
  1160       A(M) = ONE/WORK2(INDRV5+M)
             TMP3 = A(M)
             DO J = M+1,N
-               A(J) = (ONE+
-     $              WORK2(INDRV6+J-1)*A(J-1))/WORK2(INDRV5+J)
+               WORK2(INDRV1+J) = WORK2(INDRV6+J-1)/WORK2(INDRV5+J)
+               A(J) = ONE/WORK2(INDRV5+J)+WORK2(INDRV1+J)*A(J-1)
                TMP3 = MAX(TMP3,A(J))
             ENDDO
             A(N) = (A(N)/TMP3)/WORK2(INDRV5+N)
             TMP1 = A(N)
-            DO J = N-1,M,-1
-               A(J) = (A(J)/TMP3+
-     $              WORK2(INDRV6+J)*A(J+1))/WORK2(INDRV5+J)
+            DO J = N-1,M+1,-1
+               WORK2(INDRV2+J) = WORK2(INDRV6+J)/WORK2(INDRV5+J)
+               A(J) = (A(J)/TMP3)/WORK2(INDRV5+J)+WORK2(INDRV2+J)*A(J+1)
                TMP1 = MAX(TMP1,A(J))
             ENDDO
+            TAU2 = MAX(ZERO,(ONE/SQRT(TMP1))/SQRT(TMP3))
+            WORK2(INDRV2+M) = WORK2(INDRV6+M)/WORK2(INDRV5+M)
+            A(M) = (A(M)/TMP3)/WORK2(INDRV5+M)+WORK2(INDRV2+M)*A(M+1)
+            TMP1 = MAX(TMP1,A(M))
             TAU = MAX(ZERO,(ONE/SQRT(TMP1))/SQRT(TMP3))
             
             A(M) = A(M)/TMP1
@@ -761,19 +780,24 @@
             TMP3 = B(M)
             DO J = M+1, N
                A(J) = A(J)/TMP1
-               B(J) = (A(J)+
-     $              WORK2(INDRV6+J-1)*B(J-1))/WORK2(INDRV5+J)
+               B(J) = A(J)/WORK2(INDRV5+J)+WORK2(INDRV1+J)*B(J-1)
                TMP3 = MAX(TMP3,B(J))
             ENDDO
-            
             TMP2 = (B(N)/TMP3)/WORK2(INDRV5+N)
             TMP1 = A(N)/TMP2
-            DO J = N-1,M,-1
-               TMP2 = (B(J)/TMP3+
-     $              WORK2(INDRV6+J)*TMP2)/WORK2(INDRV5+J)
+            DO J = N-1,M+1,-1
+               TMP2 = (B(J)/TMP3)/WORK2(INDRV5+J)+WORK2(INDRV2+J)*TMP2
                TMP1 = MIN(TMP1,A(J)/TMP2)
             ENDDO
+            TAU2 = MAX(TAU2,SQRT(TMP1)/SQRT(TMP3))
+            TMP2 = (B(M)/TMP3)/WORK2(INDRV5+M)+WORK2(INDRV2+M)*TMP2
+            TMP1 = MIN(TMP1,A(M)/TMP2)
             TAU = MAX(TAU,SQRT(TMP1)/SQRT(TMP3))
+
+            TMP1=SQRT(TAU2-WORK2(INDRV5+M))*SQRT(TAU2+WORK2(INDRV5+M))
+            TAU = MAX(TAU,
+     $           WORK2(INDRV5+M)*SQRT(ONE-WORK2(INDRV6+M)/TMP1)*
+     $           SQRT(ONE+WORK2(INDRV6+M)/TMP1))
             
             IF (TAU .GT. ZERO) GO TO 1125
             
@@ -800,7 +824,7 @@
                      TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*WORK2(INDRV5+N)
                      IF (TAU2 .LT. TAU) EXIT
                   ENDDO
-                  TAU = MAX(HALF*TAU,TAU2)
+                  TAU = TAU2
                   GO TO 1125
                ELSE
                   TMP3 = SQRT(TMP4)*SQRT(WORK2(INDRV5+N)+TAU)
@@ -864,7 +888,7 @@
                      TAU2 = MAX(ONE-DBLE(K)*EPS,ZERO)*WORK2(INDRV5+N)
                      IF (TAU2 .LT. TAU) EXIT
                   ENDDO
-                  TAU = MAX(HALF*TAU,TAU2)
+                  TAU = TAU2
                   GO TO 1125
                ELSE
                   TMP3 = SQRT(TMP4)*SQRT(WORK2(INDRV5+N)+TAU)
